@@ -236,7 +236,7 @@ namespace ToyProgramCH
 				NodeForPathfinding neighbourAsPathfindingNode = new NodeForPathfinding(neighbourOfStartingNode);
 				neighbourAsPathfindingNode.predecessor = startingNode;
 
-				neighbourAsPathfindingNode.dijkstraDistance = neighbourAsPathfindingNode.findDistanceToStart(startingNode) + neighbourAsPathfindingNode.manhattanDistanceToNode(arrival);
+				neighbourAsPathfindingNode.dijkstraDistance = neighbourAsPathfindingNode.findDistanceToStart(startingNode) + neighbourAsPathfindingNode.distanceCostOfManhattanJourney(arrival);
 				listOfOpenNodes.Add(neighbourAsPathfindingNode);
 				// Console.Write("We opened node " + neighbourAsPathfindingNode.uniqueNumber + " . Distance to start was " + neighbourAsPathfindingNode.findDistanceToStart(startingNode)
 	// + " and distance to finish is approximatly " + neighbourAsPathfindingNode.manhattanDistanceToNode(arrival) +
@@ -269,7 +269,7 @@ namespace ToyProgramCH
 						if (neighbourAsPathfindingNode.dijkstraDistance == double.PositiveInfinity)
 						{
 							neighbourAsPathfindingNode.predecessor = nodeToClose;
-							neighbourAsPathfindingNode.dijkstraDistance = neighbourAsPathfindingNode.findDistanceToStart(startingNode) + neighbourAsPathfindingNode.manhattanDistanceToNode(arrival);
+							neighbourAsPathfindingNode.dijkstraDistance = neighbourAsPathfindingNode.findDistanceToStart(startingNode) + neighbourAsPathfindingNode.distanceCostOfManhattanJourney(arrival);
 							// Console.Write("We opened node " + neighbourAsPathfindingNode.uniqueNumber + " . Distance to start was " + neighbourAsPathfindingNode.findDistanceToStart(startingNode)
 								// + " and distance to finish is approximatly " + neighbourAsPathfindingNode.manhattanDistanceToNode(arrival) +
 								// " Sum of distances is : " + neighbourAsPathfindingNode.dijkstraDistance + "\n");
@@ -278,7 +278,7 @@ namespace ToyProgramCH
 						{
 							NodeForPathfinding predecessorWeMightKeep = neighbourAsPathfindingNode.predecessor;
 							neighbourAsPathfindingNode.predecessor = nodeToClose;
-							double distanceThroughtNodeToClose = neighbourAsPathfindingNode.findDistanceToStart(startingNode) + neighbourAsPathfindingNode.manhattanDistanceToNode(arrival);
+							double distanceThroughtNodeToClose = neighbourAsPathfindingNode.findDistanceToStart(startingNode) + neighbourAsPathfindingNode.distanceCostOfManhattanJourney(arrival);
 							if (distanceThroughtNodeToClose < neighbourAsPathfindingNode.dijkstraDistance) { neighbourAsPathfindingNode.dijkstraDistance = distanceThroughtNodeToClose; }
 							else { neighbourAsPathfindingNode.predecessor = predecessorWeMightKeep; }
 						}
@@ -435,6 +435,29 @@ namespace ToyProgramCH
 			double manhattanDistance = Math.Abs(this.coordinates[0] - otherNode.coordinates[0]) + Math.Abs(this.coordinates[1] - otherNode.coordinates[1]);
 
 			return (manhattanDistance * (1.0 + (1/(manhattanDistance*2))));
+		}
+
+		public double distanceCostOfManhattanJourney(Node otherNode)
+		{
+			bool foundOtherNode = false;
+			double cost = 0;
+			Node currentNode = this;
+
+			if (this.uniqueNumber != otherNode.uniqueNumber)
+			{
+				while (!foundOtherNode)
+				{
+					List<NodeForPathfinding> neighboursOfCurrentNode = new List<NodeForPathfinding>();
+					foreach (Node neighbourNode in currentNode.GetNeighbours()) neighboursOfCurrentNode.Add(new NodeForPathfinding(neighbourNode));
+					Node neighourClosestToOtherNode = neighboursOfCurrentNode.OrderBy(NodeForPathfinding => NodeForPathfinding.manhattanDistanceToNode(otherNode)).ToList()[0];
+					cost = cost + currentNode.links.Find(Link => Link.nodes[0].uniqueNumber == neighourClosestToOtherNode.uniqueNumber || Link.nodes[1].uniqueNumber == neighourClosestToOtherNode.uniqueNumber).cost;
+
+					if (neighourClosestToOtherNode.uniqueNumber == otherNode.uniqueNumber) foundOtherNode = true;
+					else currentNode = neighourClosestToOtherNode;
+				}
+			}
+
+			return (cost);
 		}
 
 
