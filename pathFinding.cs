@@ -236,7 +236,7 @@ namespace ToyProgramCH
 				NodeForPathfinding neighbourAsPathfindingNode = new NodeForPathfinding(neighbourOfStartingNode);
 				neighbourAsPathfindingNode.predecessor = startingNode;
 
-				neighbourAsPathfindingNode.dijkstraDistance = neighbourAsPathfindingNode.findDistanceToStart(startingNode) + neighbourAsPathfindingNode.manhattanDistanceToNode(arrival);
+				neighbourAsPathfindingNode.dijkstraDistance = neighbourAsPathfindingNode.findDistanceToStart(startingNode) + neighbourAsPathfindingNode.manhattanDistanceToNode(mapOfPathFinding, arrival);
 				listOfOpenNodes.Add(neighbourAsPathfindingNode);
 				// Console.Write("We opened node " + neighbourAsPathfindingNode.uniqueNumber + " . Distance to start was " + neighbourAsPathfindingNode.findDistanceToStart(startingNode)
 	// + " and distance to finish is approximatly " + neighbourAsPathfindingNode.manhattanDistanceToNode(arrival) +
@@ -269,7 +269,7 @@ namespace ToyProgramCH
 						if (neighbourAsPathfindingNode.dijkstraDistance == double.PositiveInfinity)
 						{
 							neighbourAsPathfindingNode.predecessor = nodeToClose;
-							neighbourAsPathfindingNode.dijkstraDistance = neighbourAsPathfindingNode.findDistanceToStart(startingNode) + neighbourAsPathfindingNode.manhattanDistanceToNode(arrival);
+							neighbourAsPathfindingNode.dijkstraDistance = neighbourAsPathfindingNode.findDistanceToStart(startingNode) + neighbourAsPathfindingNode.manhattanDistanceToNode(mapOfPathFinding, arrival);
 							// Console.Write("We opened node " + neighbourAsPathfindingNode.uniqueNumber + " . Distance to start was " + neighbourAsPathfindingNode.findDistanceToStart(startingNode)
 								// + " and distance to finish is approximatly " + neighbourAsPathfindingNode.manhattanDistanceToNode(arrival) +
 								// " Sum of distances is : " + neighbourAsPathfindingNode.dijkstraDistance + "\n");
@@ -278,7 +278,7 @@ namespace ToyProgramCH
 						{
 							NodeForPathfinding predecessorWeMightKeep = neighbourAsPathfindingNode.predecessor;
 							neighbourAsPathfindingNode.predecessor = nodeToClose;
-							double distanceThroughtNodeToClose = neighbourAsPathfindingNode.findDistanceToStart(startingNode) + neighbourAsPathfindingNode.manhattanDistanceToNode(arrival);
+							double distanceThroughtNodeToClose = neighbourAsPathfindingNode.findDistanceToStart(startingNode) + neighbourAsPathfindingNode.manhattanDistanceToNode(mapOfPathFinding, arrival);
 							if (distanceThroughtNodeToClose < neighbourAsPathfindingNode.dijkstraDistance) { neighbourAsPathfindingNode.dijkstraDistance = distanceThroughtNodeToClose; }
 							else { neighbourAsPathfindingNode.predecessor = predecessorWeMightKeep; }
 						}
@@ -310,7 +310,7 @@ namespace ToyProgramCH
 			// We create a new picture box
 			PictureBox pb1 = new PictureBox();
 			// We display the map, but with the departure and arrival points
-			Bitmap bmpForPictureBox = RasterFunctions.MapToBitmapWithArrivalAndDeparture(this, false);
+			Bitmap bmpForPictureBox = RasterFunctions.MapToBitmapWithArrivalAndDeparture(mapOfPathFinding, false);
 			pb1.Image = bmpForPictureBox;
 			// We display everything nicely
 			pb1.SizeMode = PictureBoxSizeMode.CenterImage;
@@ -322,12 +322,12 @@ namespace ToyProgramCH
 			// We initialize what we need for the search
 			List<NodeForPathfinding> forwardListOfOpenNodes = new List<NodeForPathfinding>();
 			List<NodeForPathfinding> forwardListOfClosedNodes = new List<NodeForPathfinding>();
-			NodeForPathfinding startingForwardNode = new NodeForPathfinding(this.departureNode);
+			NodeForPathfinding startingForwardNode = new NodeForPathfinding(mapOfPathFinding.departureNode);
 			forwardListOfOpenNodes.Add(startingForwardNode);
 
 			List<NodeForPathfinding> backwardListOfOpenNodes = new List<NodeForPathfinding>();
 			List<NodeForPathfinding> backwardListOfClosedNodes = new List<NodeForPathfinding>();
-			NodeForPathfinding startingBackwardNode = new NodeForPathfinding(this.arrivalNode);
+			NodeForPathfinding startingBackwardNode = new NodeForPathfinding(mapOfPathFinding.arrivalNode);
 			backwardListOfOpenNodes.Add(startingBackwardNode);
 
 			bool didTheyMeet = false;
@@ -343,33 +343,28 @@ namespace ToyProgramCH
 
 				foreach (Node neighbourtoOpen in nodeToClose.GetNeighbours())
 				{
-					NodeForPathfinding neighbourAsPathfindingNode = new NodeForPathfinding(neighbourtoOpen);
-					if (forwardListOfClosedNodes.Find(NodeForPathfinding => NodeForPathfinding.uniqueNumber == neighbourtoOpen.uniqueNumber) != null)
+					// Is the neighbor of higher order ? If so, we look at it
+					if (neighbourtoOpen.order > nodeToClose.order)
 					{
-						neighbourAsPathfindingNode = forwardListOfClosedNodes.Find(NodeForPathfinding => NodeForPathfinding.uniqueNumber == neighbourtoOpen.uniqueNumber);
-					}
-					else if (forwardListOfOpenNodes.Find(NodeForPathfinding => NodeForPathfinding.uniqueNumber == neighbourtoOpen.uniqueNumber) != null)
-					{
-						neighbourAsPathfindingNode = forwardListOfOpenNodes.Find(NodeForPathfinding => NodeForPathfinding.uniqueNumber == neighbourtoOpen.uniqueNumber);
-					}
-					else { forwardListOfOpenNodes.Add(neighbourAsPathfindingNode); }
-					if (!forwardListOfClosedNodes.Contains(neighbourAsPathfindingNode))
-					{
-						if (neighbourAsPathfindingNode.dijkstraDistance == double.PositiveInfinity)
+						// We do the necessary transformations of the neighbour into a pathFindingNode, and add it in the open list if it's not in already
+						NodeForPathfinding neighbourAsPathfindingNode = new NodeForPathfinding(neighbourtoOpen);
+						if (forwardListOfClosedNodes.Find(NodeForPathfinding => NodeForPathfinding.uniqueNumber == neighbourtoOpen.uniqueNumber) != null)
 						{
-							neighbourAsPathfindingNode.predecessor = nodeToClose;
-							neighbourAsPathfindingNode.dijkstraDistance = neighbourAsPathfindingNode.findDistanceToStartCH(startingForwardNode);
+							neighbourAsPathfindingNode = forwardListOfClosedNodes.Find(NodeForPathfinding => NodeForPathfinding.uniqueNumber == neighbourtoOpen.uniqueNumber);
 						}
-						else
+						else if (forwardListOfOpenNodes.Find(NodeForPathfinding => NodeForPathfinding.uniqueNumber == neighbourtoOpen.uniqueNumber) != null)
 						{
-							NodeForPathfinding predecessorWeMightKeep = neighbourAsPathfindingNode.predecessor;
+							neighbourAsPathfindingNode = forwardListOfOpenNodes.Find(NodeForPathfinding => NodeForPathfinding.uniqueNumber == neighbourtoOpen.uniqueNumber);
+						}
+						else { forwardListOfOpenNodes.Add(neighbourAsPathfindingNode); }
+						// If the neighbour already has a predecessor, we look if that predecessor is of lower order than our current node. If not, the current node becomes the predecessor.
+						if (neighbourAsPathfindingNode.predecessor != null && neighbourAsPathfindingNode.predecessor.order > nodeToClose.order)
+						{
 							neighbourAsPathfindingNode.predecessor = nodeToClose;
-							double distanceThroughtNodeToClose = neighbourAsPathfindingNode.findDistanceToStart(startingForwardNode);
-							if (distanceThroughtNodeToClose < neighbourAsPathfindingNode.dijkstraDistance) { neighbourAsPathfindingNode.dijkstraDistance = distanceThroughtNodeToClose; }
-							else { neighbourAsPathfindingNode.predecessor = predecessorWeMightKeep; }
 						}
 					}
 				}
+				// We close the node we studied, and update the map.
 				forwardListOfClosedNodes.Add(nodeToClose);
 				bmpForPictureBox.SetPixel(nodeToClose.coordinates[0], nodeToClose.coordinates[1], Color.FromArgb(0, 204, 204));
 				pb1.Image = bmpForPictureBox;
@@ -385,33 +380,28 @@ namespace ToyProgramCH
 
 				foreach (Node neighbourtoOpen in nodeToClose.GetNeighbours())
 				{
-					NodeForPathfinding neighbourAsPathfindingNode = new NodeForPathfinding(neighbourtoOpen);
-					if (backwardListOfClosedNodes.Find(NodeForPathfinding => NodeForPathfinding.uniqueNumber == neighbourtoOpen.uniqueNumber) != null)
+					// Is the neighbor of lower order ? If so, we look at it
+					if (neighbourtoOpen.order < nodeToClose.order)
 					{
-						neighbourAsPathfindingNode = backwardListOfClosedNodes.Find(NodeForPathfinding => NodeForPathfinding.uniqueNumber == neighbourtoOpen.uniqueNumber);
-					}
-					else if (backwardListOfOpenNodes.Find(NodeForPathfinding => NodeForPathfinding.uniqueNumber == neighbourtoOpen.uniqueNumber) != null)
-					{
-						neighbourAsPathfindingNode = backwardListOfOpenNodes.Find(NodeForPathfinding => NodeForPathfinding.uniqueNumber == neighbourtoOpen.uniqueNumber);
-					}
-					else { backwardListOfOpenNodes.Add(neighbourAsPathfindingNode); }
-					if (!backwardListOfClosedNodes.Contains(neighbourAsPathfindingNode))
-					{
-						if (neighbourAsPathfindingNode.dijkstraDistance == double.PositiveInfinity)
+						// We do the necessary transformations of the neighbour into a pathFindingNode, and add it in the open list if it's not in already
+						NodeForPathfinding neighbourAsPathfindingNode = new NodeForPathfinding(neighbourtoOpen);
+						if (backwardListOfClosedNodes.Find(NodeForPathfinding => NodeForPathfinding.uniqueNumber == neighbourtoOpen.uniqueNumber) != null)
 						{
-							neighbourAsPathfindingNode.predecessor = nodeToClose;
-							neighbourAsPathfindingNode.dijkstraDistance = neighbourAsPathfindingNode.findDistanceToStartCH(startingBackwardNode);
+							neighbourAsPathfindingNode = backwardListOfClosedNodes.Find(NodeForPathfinding => NodeForPathfinding.uniqueNumber == neighbourtoOpen.uniqueNumber);
 						}
-						else
+						else if (backwardListOfOpenNodes.Find(NodeForPathfinding => NodeForPathfinding.uniqueNumber == neighbourtoOpen.uniqueNumber) != null)
 						{
-							NodeForPathfinding predecessorWeMightKeep = neighbourAsPathfindingNode.predecessor;
+							neighbourAsPathfindingNode = backwardListOfOpenNodes.Find(NodeForPathfinding => NodeForPathfinding.uniqueNumber == neighbourtoOpen.uniqueNumber);
+						}
+						else { backwardListOfOpenNodes.Add(neighbourAsPathfindingNode); }
+						// If the neighbour already has a predecessor, we look if that predecessor is of lower order than our current node. If not, the current node becomes the predecessor.
+						if (neighbourAsPathfindingNode.predecessor != null && neighbourAsPathfindingNode.predecessor.order < nodeToClose.order)
+						{
 							neighbourAsPathfindingNode.predecessor = nodeToClose;
-							double distanceThroughtNodeToClose = neighbourAsPathfindingNode.findDistanceToStart(startingBackwardNode);
-							if (distanceThroughtNodeToClose < neighbourAsPathfindingNode.dijkstraDistance) { neighbourAsPathfindingNode.dijkstraDistance = distanceThroughtNodeToClose; }
-							else { neighbourAsPathfindingNode.predecessor = predecessorWeMightKeep; }
 						}
 					}
 				}
+				// We close the node we studied, and update the map.
 				backwardListOfClosedNodes.Add(nodeToClose);
 				bmpForPictureBox.SetPixel(nodeToClose.coordinates[0], nodeToClose.coordinates[1], Color.FromArgb(0, 204, 204));
 				pb1.Image = bmpForPictureBox;
@@ -419,7 +409,7 @@ namespace ToyProgramCH
 
 				// Is there an open cell that is both in the foward and backward search ?
 
-				if (forwardListOfClosedNodes.Select(NodeForPathfinding => NodeForPathfinding.uniqueNumber).ToList().Intersect(backwardListOfClosedNodes.Select(NodeForPathfinding => NodeForPathfinding.uniqueNumber).ToList()).Count() != 0) didTheyMeet = true;
+				if (forwardListOfOpenNodes.Select(NodeForPathfinding => NodeForPathfinding.uniqueNumber).ToList().Intersect(backwardListOfOpenNodes.Select(NodeForPathfinding => NodeForPathfinding.uniqueNumber).ToList()).Count() != 0) didTheyMeet = true;
 				// Console.Write("Intersect count : " + forwardListOfClosedNodes.Intersect(backwardListOfClosedNodes).Count() + "\n");
 			}
 
@@ -428,12 +418,12 @@ namespace ToyProgramCH
 			List<Node> unionListOfNodes = new List<Node>();
 
 			// First, we have to treat the case in which the arrival or depature node was found uniquely by the backward or the forward search.
-			if (forwardListOfClosedNodes[forwardListOfClosedNodes.Count - 1].uniqueNumber == arrivalNode.uniqueNumber)
+			if (forwardListOfClosedNodes[forwardListOfClosedNodes.Count - 1].uniqueNumber == mapOfPathFinding.arrivalNode.uniqueNumber)
 			{
 				// We allow the return of the path from the node just before the starting or arrival node to avoid errors of predecessors
 				unionListOfNodes = forwardListOfClosedNodes[forwardListOfClosedNodes.Count - 2].findPathToStart(startingForwardNode);
 			}
-			else if (backwardListOfClosedNodes[backwardListOfClosedNodes.Count - 1].uniqueNumber == departureNode.uniqueNumber)
+			else if (backwardListOfClosedNodes[backwardListOfClosedNodes.Count - 1].uniqueNumber == mapOfPathFinding.departureNode.uniqueNumber)
 			{
 				unionListOfNodes = backwardListOfClosedNodes[backwardListOfClosedNodes.Count - 2].findPathToStart(startingBackwardNode);
 			}
@@ -441,8 +431,8 @@ namespace ToyProgramCH
 			else
 			{
 				// First, we find the uniquen number of the node where they met.
-				List<int> forwardUniqueNumbers = forwardListOfClosedNodes.Select(NodeForPathfinding => NodeForPathfinding.uniqueNumber).ToList();
-				List<int> backwardUniqueNumbers = backwardListOfClosedNodes.Select(NodeForPathfinding => NodeForPathfinding.uniqueNumber).ToList();
+				List<int> forwardUniqueNumbers = forwardListOfOpenNodes.Select(NodeForPathfinding => NodeForPathfinding.uniqueNumber).ToList();
+				List<int> backwardUniqueNumbers = backwardListOfOpenNodes.Select(NodeForPathfinding => NodeForPathfinding.uniqueNumber).ToList();
 				int nodeWhereTheyMet = forwardUniqueNumbers.Intersect(backwardUniqueNumbers).ToList()[0];
 
 				// We take the path from this node to the start and to the arrival with each list
@@ -456,8 +446,7 @@ namespace ToyProgramCH
 
 
 			// We add the first node of the list to the pathlist
-
-			this.LeastCostPath.AddRange(unionListOfNodes);
+			return (unionListOfNodes);
 
 			// We look at each node one by one in the list until we arrive
 			// at the arrival node.
@@ -472,11 +461,6 @@ namespace ToyProgramCH
 
 			// Current node becomes next node
 
-
-
-
-
-			return (arrivalAsPathfindingNode.findPathToStart(startingNode));
 		}
 
 
@@ -611,11 +595,11 @@ namespace ToyProgramCH
 			return (euclidianDistance);
 		}
 
-		public double manhattanDistanceToNode(Node otherNode)
+		public double manhattanDistanceToNode(Map mapForPathFinding, Node otherNode)
 		{
 			double manhattanDistance = Math.Abs(this.coordinates[0] - otherNode.coordinates[0]) + Math.Abs(this.coordinates[1] - otherNode.coordinates[1]);
 
-			return (manhattanDistance * (1.0 + (1/(manhattanDistance*2))));
+			return (manhattanDistance * (1.0 + (1/(manhattanDistance*2))) * mapForPathFinding.minimalLinkCost);
 		}
 
 
