@@ -434,7 +434,7 @@ namespace ToyProgramCH
 		{
 			double manhattanDistance = Math.Abs(this.coordinates[0] - otherNode.coordinates[0]) + Math.Abs(this.coordinates[1] - otherNode.coordinates[1]);
 
-			return (manhattanDistance);
+			return (manhattanDistance * (1.0 + (1/(manhattanDistance*2))));
 		}
 
 
