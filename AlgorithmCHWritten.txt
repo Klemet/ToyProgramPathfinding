@@ -1,0 +1,30 @@
+- On boucle
+- On regarde si l'un des noeuds ouvert de la recherche en avant correspond
+à l'un des noeuds ouverts de la liste en arrière
+- Si c'est le cas, on arrête la boucle
+
+- On considère la recherche en avant (va dans le sens des ordres croissants/plus grands)
+	- On sort le noeud de la liste des noeuds ouverts avec l'ordre le plus grand 
+	- On regarde les noeuds voisins qui sont liés à lui
+		- Pour chacun des noeuds voisins liés à lui qui sont d'ordre plus grand que lui :
+		- On ajoute ce noeud en tant que predecesseur (si ce noeud voisin n'as pas deja un predecesseur; si c'est le cas, on
+		regarde si le noeud a un ordre plus petit que le predecesseur deja enregistré. Si c'est le cas, il prend sa place)
+		- On ajoute le noeud voisin dans la liste des noeuds ouverts
+	- On ferme le noeud
+
+- On considère la recherche en arrière (va dans le sens des ordres décroissants/plus petits)
+	- On sort le noeud de la liste des noeuds ouverts avec l'ordre le plus petit 
+	- On regarde les noeuds voisins qui sont liés à lui
+		- Pour chacun des noeuds voisins liés à lui qui sont d'ordre plus petit que lui :
+		- On ajoute ce noeud en tant que predecesseur (si ce noeud voisin n'as pas deja un predecesseur; si c'est le cas, on
+		regarde si le noeud a un ordre plus grand que le predecesseur deja enregistré. Si c'est le cas, il prend sa place)
+		- On ajoute le noeud voisin dans la liste des noeuds ouverts
+	- On ferme le noeud
+	
+- Une fois la boucle terminée
+- On récupère le noeud "v" qui se trouve dans les deux listes ouverte
+- On récupère le chemin start => v par les prédecesseurs de la recherche croissante
+- On récupère le chemin v => goal par les prédécesseurs de la recherche décroissante
+- On fait l'union de ces deux chemins
+- Done !
+	
