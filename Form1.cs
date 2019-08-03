@@ -46,7 +46,7 @@ namespace ToyProgramCH
 			perlinMap = new Map(new int[] { dimensions, dimensions });
 			initialControlsCount = this.Controls.Count;
 			// we give a proper name to the form
-			this.Text = "Toy Program : Testing the Contraction Hierarchies algorithm";
+			this.Text = "Toy Program for pathfinding algorithms (V.0.8)";
 			// Give proper size to form and position
 			this.Size = new System.Drawing.Size(1000, 1000);
 			this.StartPosition = FormStartPosition.Manual;
