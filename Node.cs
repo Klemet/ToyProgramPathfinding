@@ -37,6 +37,18 @@ namespace ToyProgramCH
 		{
 		}
 
+		// Easily get coordinates
+		public int x
+		{
+			get { return (this.coordinates[0]); }
+		}
+
+		public int y
+		{
+			get { return (this.coordinates[1]); }
+		}
+
+
 		public List<Node> GetNeighbours()
 		{
 			List<Node> listOfNeighbours = new List<Node>();
