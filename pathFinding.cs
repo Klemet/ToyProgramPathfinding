@@ -53,11 +53,11 @@ namespace ToyProgramCH
 
 		}
 
-		public static NodeForPathfinding GetOpenNodeWithSmallestDistance(NodeForPathfinding[,] tableOfNodesForPathfinding)
+		public static NodeForPathfinding GetOpenNodeWithSmallestDistance(IEnumerable<NodeForPathfinding> enumerableOfNodesForPathfinding)
 		{
-			NodeForPathfinding nodeToReturn = tableOfNodesForPathfinding[0, 0];
+			NodeForPathfinding nodeToReturn = enumerableOfNodesForPathfinding.First();
 
-			foreach (NodeForPathfinding otherNode in tableOfNodesForPathfinding)
+			foreach (NodeForPathfinding otherNode in enumerableOfNodesForPathfinding)
 			{
 				if (otherNode.isOpen && otherNode.dijkstraDistance < nodeToReturn.dijkstraDistance) nodeToReturn = otherNode;
 			}
@@ -172,6 +172,7 @@ namespace ToyProgramCH
 
 		public static List<Node> DijkstraLeastCostPathList(Node arrival, Node departure, Form1 form, Map mapOfPathFinding)
 		{
+			var watch = System.Diagnostics.Stopwatch.StartNew();
 			// We create a bitmap in the form with the departure/arrival points
 			// If there is already a picture box, we remove it.
 			// We create a new picture box
@@ -189,7 +190,7 @@ namespace ToyProgramCH
 			// For comments, see previous function.
 			//NodeForPathfinding startingNode = new NodeForPathfinding(departure);
 			//List<NodeForPathfinding> listOfClosedNodes = new List<NodeForPathfinding>();
-			//List<NodeForPathfinding> listOfOpenNodes = new List<NodeForPathfinding>();
+			List<NodeForPathfinding> listOfOpenNodes = new List<NodeForPathfinding>();
 			NodeForPathfinding[,] tableOfNodesForPathFinding = CreateArrayOfNodesForPathFinding(mapOfPathFinding);
 			NodeForPathfinding startingNode = tableOfNodesForPathFinding[departure.x, departure.y];
 
@@ -198,8 +199,8 @@ namespace ToyProgramCH
 				NodeForPathfinding neighbourAsPathfindingNode = tableOfNodesForPathFinding[neighbourOfStartingNode.x, neighbourOfStartingNode.y];
 				neighbourAsPathfindingNode.predecessor = startingNode;
 
-				neighbourAsPathfindingNode.dijkstraDistance = neighbourAsPathfindingNode.findDistanceToStart(startingNode);
-				// listOfOpenNodes.Add(neighbourAsPathfindingNode);
+				neighbourAsPathfindingNode.dijkstraDistance = Link.InitializeCost(startingNode, neighbourAsPathfindingNode);
+				listOfOpenNodes.Add(neighbourAsPathfindingNode);
 				neighbourAsPathfindingNode.isOpen = true;
 			}
 			//listOfClosedNodes.Add(startingNode);
@@ -210,8 +211,10 @@ namespace ToyProgramCH
 			{
 				// listOfOpenNodes = listOfOpenNodes.OrderBy(NodeForPathfinding => NodeForPathfinding.dijkstraDistance).ToList();
 				// NodeForPathfinding nodeToClose = listOfOpenNodes[0];
+				NodeForPathfinding nodeToClose = GetOpenNodeWithSmallestDistance(listOfOpenNodes);
+				listOfOpenNodes.RemoveAll(NodeForPathfinding => NodeForPathfinding.uniqueNumber == nodeToClose.uniqueNumber);
 				// listOfOpenNodes.RemoveAt(0);
-				NodeForPathfinding nodeToClose = GetOpenNodeWithSmallestDistance(tableOfNodesForPathFinding);
+				// NodeForPathfinding nodeToClose = GetOpenNodeWithSmallestDistance(tableOfNodesForPathFinding);
 
 				foreach (Node neighbourtoOpen in nodeToClose.GetNeighboursWithoutShortcuts())
 				{
@@ -231,19 +234,32 @@ namespace ToyProgramCH
 					// if (!listOfClosedNodes.Contains(neighbourAsPathfindingNode))
 					if (!neighbourAsPathfindingNode.isClosed)
 					{
-						neighbourAsPathfindingNode.isOpen = true;
+						if (!neighbourAsPathfindingNode.isOpen)
+						{
+							neighbourAsPathfindingNode.isOpen = true;
+							listOfOpenNodes.Add(neighbourAsPathfindingNode);
+						}
 						if (neighbourAsPathfindingNode.dijkstraDistance == double.PositiveInfinity)
 						{
 							neighbourAsPathfindingNode.predecessor = nodeToClose;
-							neighbourAsPathfindingNode.dijkstraDistance = neighbourAsPathfindingNode.findDistanceToStart(startingNode);
+							// neighbourAsPathfindingNode.dijkstraDistance = neighbourAsPathfindingNode.findDistanceToStart(startingNode);
+							neighbourAsPathfindingNode.dijkstraDistance = nodeToClose.dijkstraDistance + Link.InitializeCost(nodeToClose, neighbourAsPathfindingNode);
 						}
 						else
 						{
+							double distanceWithThisNodeToCloseAsNeighbour = nodeToClose.dijkstraDistance + Link.InitializeCost(nodeToClose, neighbourAsPathfindingNode);
+							if (distanceWithThisNodeToCloseAsNeighbour < neighbourAsPathfindingNode.dijkstraDistance)
+							{
+								neighbourAsPathfindingNode.predecessor = nodeToClose;
+								neighbourAsPathfindingNode.dijkstraDistance = distanceWithThisNodeToCloseAsNeighbour;
+							}
+							/*
 							NodeForPathfinding predecessorWeMightKeep = neighbourAsPathfindingNode.predecessor;
 							neighbourAsPathfindingNode.predecessor = nodeToClose;
 							double distanceThroughtNodeToClose = neighbourAsPathfindingNode.findDistanceToStart(startingNode);
 							if (distanceThroughtNodeToClose < neighbourAsPathfindingNode.dijkstraDistance) { neighbourAsPathfindingNode.dijkstraDistance = distanceThroughtNodeToClose; }
 							else { neighbourAsPathfindingNode.predecessor = predecessorWeMightKeep; }
+							*/
 						}
 					}
 
@@ -254,12 +270,15 @@ namespace ToyProgramCH
 				nodeToClose.isOpen = false;
 				nodeToClose.isClosed = true;
 
-				bmpForPictureBox.SetPixel(nodeToClose.x, nodeToClose.y, Color.FromArgb(0, 204, 204));
-				pb1.Image = bmpForPictureBox;
-				pb1.Refresh();
+				// bmpForPictureBox.SetPixel(nodeToClose.x, nodeToClose.y, Color.FromArgb(0, 204, 204));
+				// pb1.Image = bmpForPictureBox;
+				// pb1.Refresh();
 			}
 			// Console.Write(listOfClosedNodes.Count + " nodes were closed during this search.\n");
 			Console.Write(GetNumberOfClosedNodes(tableOfNodesForPathFinding) + " nodes were closed during this search.\n");
+			watch.Stop();
+			Console.Write("The search took " + watch.ElapsedMilliseconds/1000 + " seconds.\n");
+			
 			return (arrivalAsPathfindingNode.findPathToStart(startingNode));
 		}
 
@@ -267,6 +286,7 @@ namespace ToyProgramCH
 
 		public static List<Node> AStarLeastCostPathList(Node arrival, Node departure, Form1 form, Map mapOfPathFinding)
 		{
+			var watch = System.Diagnostics.Stopwatch.StartNew();
 			// We create a bitmap in the form with the departure/arrival points
 			// If there is already a picture box, we remove it.
 			// We create a new picture box
@@ -282,32 +302,37 @@ namespace ToyProgramCH
 
 
 			// For comments, see previous functions.
-			NodeForPathfinding startingNode = new NodeForPathfinding(departure);
-			List<NodeForPathfinding> listOfClosedNodes = new List<NodeForPathfinding>();
+			// NodeForPathfinding startingNode = new NodeForPathfinding(departure);
+			// List<NodeForPathfinding> listOfClosedNodes = new List<NodeForPathfinding>();
+
 			List<NodeForPathfinding> listOfOpenNodes = new List<NodeForPathfinding>();
+			NodeForPathfinding[,] tableOfNodesForPathFinding = CreateArrayOfNodesForPathFinding(mapOfPathFinding);
+			NodeForPathfinding startingNode = tableOfNodesForPathFinding[departure.x, departure.y];
+
 			foreach (Node neighbourOfStartingNode in startingNode.GetNeighbours())
 			{
-				NodeForPathfinding neighbourAsPathfindingNode = new NodeForPathfinding(neighbourOfStartingNode);
+				NodeForPathfinding neighbourAsPathfindingNode = tableOfNodesForPathFinding[neighbourOfStartingNode.x, neighbourOfStartingNode.y];
 				neighbourAsPathfindingNode.predecessor = startingNode;
 
-				neighbourAsPathfindingNode.dijkstraDistance = neighbourAsPathfindingNode.findDistanceToStart(startingNode) + neighbourAsPathfindingNode.manhattanDistanceToNode(mapOfPathFinding, arrival);
+				neighbourAsPathfindingNode.dijkstraDistance = Link.InitializeCost(startingNode, neighbourAsPathfindingNode);
 				listOfOpenNodes.Add(neighbourAsPathfindingNode);
-				// Console.Write("We opened node " + neighbourAsPathfindingNode.uniqueNumber + " . Distance to start was " + neighbourAsPathfindingNode.findDistanceToStart(startingNode)
-	// + " and distance to finish is approximatly " + neighbourAsPathfindingNode.manhattanDistanceToNode(arrival) +
-	// " Sum of distances is : " + neighbourAsPathfindingNode.dijkstraDistance + "\n");
+				neighbourAsPathfindingNode.isOpen = true;
 			}
-			listOfClosedNodes.Add(startingNode);
+			// listOfClosedNodes.Add(startingNode);
 			bool foundTheGoal = false;
 			NodeForPathfinding arrivalAsPathfindingNode = startingNode;
 			while (!foundTheGoal)
 			{
-				listOfOpenNodes = listOfOpenNodes.OrderBy(NodeForPathfinding => NodeForPathfinding.dijkstraDistance).ToList();
-				NodeForPathfinding nodeToClose = listOfOpenNodes[0];
-				listOfOpenNodes.RemoveAt(0);
+				// listOfOpenNodes = listOfOpenNodes.OrderBy(NodeForPathfinding => NodeForPathfinding.dijkstraDistance).ToList();
+				// NodeForPathfinding nodeToClose = listOfOpenNodes[0];
+				// listOfOpenNodes.RemoveAt(0);
+				NodeForPathfinding nodeToClose = GetOpenNodeWithSmallestDistance(listOfOpenNodes);
+				listOfOpenNodes.RemoveAll(NodeForPathfinding => NodeForPathfinding.uniqueNumber == nodeToClose.uniqueNumber);
 				// Console.Write("Closing cell " + nodeToClose.uniqueNumber + " with distance = " + nodeToClose.dijkstraDistance + "\n");
 
 				foreach (Node neighbourtoOpen in nodeToClose.GetNeighboursWithoutShortcuts())
 				{
+					/*
 					NodeForPathfinding neighbourAsPathfindingNode = new NodeForPathfinding(neighbourtoOpen);
 					if (listOfClosedNodes.Find(NodeForPathfinding => NodeForPathfinding.uniqueNumber == neighbourtoOpen.uniqueNumber) != null)
 					{
@@ -318,38 +343,59 @@ namespace ToyProgramCH
 						neighbourAsPathfindingNode = listOfOpenNodes.Find(NodeForPathfinding => NodeForPathfinding.uniqueNumber == neighbourtoOpen.uniqueNumber);
 					}
 					else { listOfOpenNodes.Add(neighbourAsPathfindingNode); }
-					if (!listOfClosedNodes.Select(NodeForPathfinding => NodeForPathfinding.uniqueNumber).Contains(neighbourAsPathfindingNode.uniqueNumber))
+					*/
+					NodeForPathfinding neighbourAsPathfindingNode = tableOfNodesForPathFinding[neighbourtoOpen.x, neighbourtoOpen.y];
+					if (!neighbourAsPathfindingNode.isClosed)
 					{
+						if (!neighbourAsPathfindingNode.isOpen)
+						{
+							neighbourAsPathfindingNode.isOpen = true;
+							listOfOpenNodes.Add(neighbourAsPathfindingNode);
+						}
 						if (neighbourAsPathfindingNode.dijkstraDistance == double.PositiveInfinity)
 						{
 							neighbourAsPathfindingNode.predecessor = nodeToClose;
-							neighbourAsPathfindingNode.dijkstraDistance = neighbourAsPathfindingNode.findDistanceToStart(startingNode) + neighbourAsPathfindingNode.manhattanDistanceToNode(mapOfPathFinding, arrival);
+							neighbourAsPathfindingNode.dijkstraDistance = nodeToClose.dijkstraDistance + Link.InitializeCost(nodeToClose, neighbourAsPathfindingNode) +
+																		+ neighbourAsPathfindingNode.manhattanDistanceToNode(mapOfPathFinding, arrival);
 							// Console.Write("We opened node " + neighbourAsPathfindingNode.uniqueNumber + " . Distance to start was " + neighbourAsPathfindingNode.findDistanceToStart(startingNode)
 								// + " and distance to finish is approximatly " + neighbourAsPathfindingNode.manhattanDistanceToNode(arrival) +
 								// " Sum of distances is : " + neighbourAsPathfindingNode.dijkstraDistance + "\n");
 						}
 						else
 						{
+							double distanceWithThisNodeToCloseAsNeighbour = nodeToClose.dijkstraDistance + Link.InitializeCost(nodeToClose, neighbourAsPathfindingNode) 
+																		  + neighbourAsPathfindingNode.manhattanDistanceToNode(mapOfPathFinding, arrival);
+							if (distanceWithThisNodeToCloseAsNeighbour < neighbourAsPathfindingNode.dijkstraDistance)
+							{
+								neighbourAsPathfindingNode.predecessor = nodeToClose;
+								neighbourAsPathfindingNode.dijkstraDistance = distanceWithThisNodeToCloseAsNeighbour;
+							}
+							/*
 							NodeForPathfinding predecessorWeMightKeep = neighbourAsPathfindingNode.predecessor;
 							neighbourAsPathfindingNode.predecessor = nodeToClose;
 							double distanceThroughtNodeToClose = neighbourAsPathfindingNode.findDistanceToStart(startingNode) + neighbourAsPathfindingNode.manhattanDistanceToNode(mapOfPathFinding, arrival);
 							if (distanceThroughtNodeToClose < neighbourAsPathfindingNode.dijkstraDistance) { neighbourAsPathfindingNode.dijkstraDistance = distanceThroughtNodeToClose; }
 							else { neighbourAsPathfindingNode.predecessor = predecessorWeMightKeep; }
+							*/
 						}
 					}
 
 					foundTheGoal = (neighbourAsPathfindingNode.uniqueNumber == arrival.uniqueNumber);
 					if (foundTheGoal) { arrivalAsPathfindingNode = neighbourAsPathfindingNode; break; }
 				}
-				listOfClosedNodes.Add(nodeToClose);
+				// listOfClosedNodes.Add(nodeToClose);
+				nodeToClose.isOpen = false;
+				nodeToClose.isClosed = true;
 				// We update the imagebox to show the progression of the pathfinding
-			    bmpForPictureBox.SetPixel(nodeToClose.coordinates[0], nodeToClose.coordinates[1], Color.FromArgb(0, 204, 204));
-				pb1.Image = bmpForPictureBox;
-				pb1.Refresh();
+				// bmpForPictureBox.SetPixel(nodeToClose.coordinates[0], nodeToClose.coordinates[1], Color.FromArgb(0, 204, 204));
+				// pb1.Image = bmpForPictureBox;
+				// pb1.Refresh();
 
 			}
 
-			Console.Write(listOfClosedNodes.Count + " nodes were closed during this search.\n");
+			Console.Write(GetNumberOfClosedNodes(tableOfNodesForPathFinding) + " nodes were closed during this search.\n");
+			watch.Stop();
+			Console.Write("The search took " + watch.ElapsedMilliseconds / 1000 + " seconds.\n");
 			return (arrivalAsPathfindingNode.findPathToStart(startingNode));
 		}
 
